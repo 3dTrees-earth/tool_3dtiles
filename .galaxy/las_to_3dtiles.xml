@@ -1,0 +1,179 @@
+<tool id="3dtrees_las_to_3dtiles" name="3D Trees LAS to 3D Tiles Converter" version="1.0.0" profile="21.09">
+  <description>Convert LAS/LAZ point cloud files to Cesium 3D Tiles with interactive viewer</description>
+
+  <creator>
+    <organization name="3D Trees Project" url="https://github.com/3dtrees-earth" />
+  </creator>
+
+  <requirements>
+    <container type="docker">ghcr.io/3dtrees-earth/las-to-3dtiles:latest</container>
+  </requirements>
+
+  <command detect_errors="exit_code"><![CDATA[
+        ## Set up output directory structure
+        mkdir -p output_dir &&
+        
+        ## Run the converter
+        gocesiumtiler file
+        --out output_dir/tileset
+        #if str($crs_in).strip()
+        --crs '$crs_in'
+        #end if
+        --resolution '$resolution'
+        --depth '$depth'
+        --min-points-per-tile '$min_points_per_tile'
+        '$input' &&
+        
+        ## Copy tileset.json to output
+        cp output_dir/tileset/tileset.json tileset.json
+        ]]>
+</command>
+
+  <inputs>
+    <param name="input" type="data" format="las" label="Point Cloud Dataset" help="LAS point cloud file to convert (LAZ not yet supported)"/>
+
+    <!-- Coordinate Reference System -->
+    <param name="crs_in" type="text" value="" optional="true" label="Input CRS (EPSG code)" 
+           help="Override auto-detected CRS. Format: EPSG:#### or just ####. Leave empty for auto-detection from LAS metadata.">
+      <validator type="regex" message="Must be EPSG code (e.g., EPSG:32632 or 32632)">^(EPSG:)?\d+$|^$</validator>
+    </param>
+
+    <!-- Quality and Performance Parameters -->
+    <param name="resolution" type="integer" value="20" min="1" max="200" label="Grid Resolution (meters)" 
+           help="Spatial sampling grid cell size. Lower=finer detail (5-10 for urban), higher=faster processing (50-100 for terrain)"/>
+
+    <param name="depth" type="integer" value="10" min="4" max="20" label="Tree Depth" 
+           help="Maximum octree subdivision levels. More=smoother zoom (12-15), less=faster conversion (6-8)"/>
+
+    <param name="min_points_per_tile" type="integer" value="5000" min="100" max="50000" label="Minimum Points per Tile" 
+           help="Minimum points before creating tile. Fewer=smoother LOD (1000-3000), more=fewer files (8000-15000)"/>
+  </inputs>
+
+  <outputs>
+    <data name="tileset" format="json" label="Tileset Metadata" from_work_dir="tileset.json">
+      <discover_datasets pattern="__designation_and_ext__" directory="output_dir/tileset" visible="true" />
+    </data>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="test.las"/>
+      <param name="crs_in" value=""/>
+      <param name="resolution" value="20"/>
+      <param name="depth" value="10"/>
+      <param name="min_points_per_tile" value="5000"/>
+      <output name="tileset" ftype="json">
+        <assert_contents>
+          <has_text text="asset" />
+          <has_text text="geometricError" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+
+  <help><![CDATA[
+
+**What it does**
+
+This tool converts LAS point cloud files to Cesium 3D Tiles format using gocesiumtiler v2.0.1, creating an interactive web-based viewer optimized for large point cloud datasets.
+
+The tool generates:
+
+1. **3D Tiles** - Industry-standard Cesium 3D Tiles v1.1 (GLB format) for efficient streaming
+2. **Interactive Web Viewer** - Standalone HTML page with CesiumJS for browsing
+3. **Tileset Metadata** - JSON file describing the tile hierarchy
+
+**Performance: 5M+ points/second**
+
+-----
+
+**Input Requirements**
+
+- **Format**: LAS files only (LAZ compressed format not yet supported)
+- **CRS**: Automatic detection from LAS metadata (GeoTIFF keys, WKT, PROJ strings)
+- **Size**: Optimized for large datasets (gigabytes+)
+
+-----
+
+**Parameters**
+
+**Input CRS (optional)**
+  Override auto-detected coordinate system. Use EPSG code format (e.g., "EPSG:32632" or "32632").
+  Leave empty for automatic detection from LAS file metadata.
+
+**Grid Resolution (meters)**
+  Controls spatial sampling density. Points aren't deleted randomly - space is divided into 
+  a 3D grid, keeping the point closest to each cell center at each detail level.
+  
+  - **Lower (5-10)**: Urban areas, architectural models, fine detail preservation
+  - **Default (20)**: Balanced quality for most datasets
+  - **Higher (50-100)**: Large terrain, forests, quick preview conversions
+
+**Tree Depth**
+  Maximum octree subdivision levels for progressive detail loading.
+  
+  - **Less (6-8)**: Small datasets, faster conversion, fewer tiles
+  - **Default (10)**: Balanced for most use cases
+  - **More (12-15)**: Very large datasets, smoother zoom transitions
+
+**Minimum Points per Tile**
+  Threshold for tile creation affects LOD quality and file count.
+  
+  - **Fewer (1000-3000)**: Smoother level-of-detail transitions, more tiles
+  - **Default (5000)**: Balanced performance
+  - **More (8000-15000)**: Fewer HTTP requests, faster initial load
+
+-----
+
+**Common Use Case Presets**
+
+.. class:: infomark
+
+**Default (balanced)**
+  Resolution: 20m | Depth: 10 | Min Points: 5000
+  Good for most datasets, balanced quality and performance
+
+**Fast preview**
+  Resolution: 50m | Depth: 8 | Min Points: 10000
+  Quick conversion for testing, lower quality
+
+**High quality urban**
+  Resolution: 5m | Depth: 12 | Min Points: 1000
+  Architectural models, detailed city scans
+
+**Large terrain**
+  Resolution: 20m | Depth: 12 | Min Points: 5000
+  Forests, landscapes, large study areas
+
+-----
+
+**Output**
+
+- **Tileset Metadata** (JSON): Main tileset.json file describing tile hierarchy and structure
+- **Tile Files**: Additional GLB format tiles (discovered as extra datasets)
+
+**Note**: The tileset output can be downloaded and hosted on a web server for visualization with CesiumJS or other 3D Tiles viewers.
+
+-----
+
+**Technical Details**
+
+- **Engine**: gocesiumtiler v2.0.1
+- **3D Tiles**: Version 1.1 GLB format
+- **CRS Support**: Universal via PROJ 9.5.0
+- **Performance**: 5M+ points/second processing speed
+
+  ]]></help>
+
+  <citations>
+    <citation type="bibtex">
+@misc{gocesiumtiler2024,
+  title = {gocesiumtiler: A tool for massive 3D pointclouds conversion to Cesium 3DTiles},
+  author = {Matteo Ferrabone Bonfigli},
+  year = {2024},
+  url = {https://github.com/mfbonfigli/gocesiumtiler},
+  note = {Version 2.0.1}
+}
+    </citation>
+  </citations>
+</tool>

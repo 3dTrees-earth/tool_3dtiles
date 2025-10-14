@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<datatypes>
+  <registration>
+    <!-- Point Cloud Formats -->
+    <datatype extension="las" type="galaxy.datatypes.binary:Binary" 
+              mimetype="application/octet-stream" 
+              display_in_upload="true" 
+              description="LAS Point Cloud Format"/>
+    
+    <datatype extension="laz" type="galaxy.datatypes.binary:Binary" 
+              mimetype="application/octet-stream" 
+              display_in_upload="true" 
+              description="LAZ Compressed Point Cloud Format"/>
+    
+    <!-- 3D Tiles Formats -->
+    <datatype extension="b3dm" type="galaxy.datatypes.binary:Binary" 
+              mimetype="application/octet-stream" 
+              display_in_upload="false" 
+              description="Batched 3D Model (3D Tiles)"/>
+    
+    <datatype extension="pnts" type="galaxy.datatypes.binary:Binary" 
+              mimetype="application/octet-stream" 
+              display_in_upload="false" 
+              description="Point Cloud (3D Tiles)"/>
+    
+    <datatype extension="i3dm" type="galaxy.datatypes.binary:Binary" 
+              mimetype="application/octet-stream" 
+              display_in_upload="false" 
+              description="Instanced 3D Model (3D Tiles)"/>
+    
+    <datatype extension="cmpt" type="galaxy.datatypes.binary:Binary" 
+              mimetype="application/octet-stream" 
+              display_in_upload="false" 
+              description="Composite (3D Tiles)"/>
+  </registration>
+</datatypes>

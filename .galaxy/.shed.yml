@@ -1,0 +1,32 @@
+name: las_to_3dtiles
+owner: your_toolshed_username
+description: Convert LAS point clouds to Cesium 3D Tiles format
+long_description: |
+  This tool converts LAS point cloud files to Cesium 3D Tiles format using 
+  gocesiumtiler v2.0.1. It generates optimized 3D tiles for web-based 
+  visualization with CesiumJS, supporting large datasets (5M+ points/second).
+  
+  Features:
+  - Universal CRS support via PROJ 9.5.0
+  - 3D Tiles v1.1 GLB format output
+  - Automatic CRS detection from LAS metadata
+  - Configurable quality and performance parameters
+  - Optional interactive HTML viewer generation
+  
+  Note: Currently supports LAS format only (LAZ support coming soon).
+
+homepage_url: https://github.com/3dtrees-earth/las-to-3dtiles
+remote_repository_url: https://github.com/3dtrees-earth/las-to-3dtiles.git
+type: unrestricted
+categories:
+  - Geospatial
+  - Visualization
+  - Data Export
+
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "{{ tool_name }}"
+
+suite:
+  name: suite_3dtrees
+  description: 3D Trees point cloud processing tools
