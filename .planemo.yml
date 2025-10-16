@@ -9,6 +9,9 @@ extra_files:
 test:
   galaxy_python_version: "3.11"
   
-# Docker configuration (use local built image or registry)
+# Docker configuration - REQUIRED for container-based tools
 docker: true
 docker_galaxy_image: "quay.io/galaxyproject/galaxy-min:latest"
+
+# Enable docker for jobs
+job_config_file: .planemo_job_conf.xml

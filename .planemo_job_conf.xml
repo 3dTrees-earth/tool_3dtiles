@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- Planemo Job Configuration for Docker-based Tools -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <destinations default="docker_local">
+        <destination id="docker_local" runner="local">
+            <param id="docker_enabled">true</param>
+            <param id="docker_sudo">false</param>
+            <param id="docker_auto_rm">true</param>
+            <param id="docker_set_user"></param>
+        </destination>
+    </destinations>
+</job_conf>
