@@ -25,7 +25,7 @@
 </command>
 
   <inputs>
-    <param name="input" type="data" format="data" label="Point Cloud Dataset" help="LAS or LAZ point cloud file to convert. LAZ files are automatically decompressed."/>
+    <param name="input" type="data" format="binary" label="Point Cloud Dataset" help="LAS or LAZ point cloud file to convert. LAZ files are automatically decompressed."/>
 
     <!-- Coordinate Reference System -->
     <param name="crs_in" type="text" value="" optional="true" label="Input CRS (EPSG code)" 

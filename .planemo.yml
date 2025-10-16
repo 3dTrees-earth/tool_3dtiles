@@ -1,0 +1,14 @@
+## Planemo Configuration for LAS to 3D Tiles Tool
+
+# Custom datatypes configuration
+# This tells Planemo to load custom LAS/LAZ datatypes during testing
+extra_files:
+  - .galaxy/datatypes_conf.xml
+
+# Test configuration
+test:
+  galaxy_python_version: "3.11"
+  
+# Docker configuration (use local built image or registry)
+docker: true
+docker_galaxy_image: "quay.io/galaxyproject/galaxy-min:latest"
