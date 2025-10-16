@@ -13,20 +13,25 @@
               description="LAZ Compressed Point Cloud Format"/>
     
     <!-- 3D Tiles Formats -->
+    <datatype extension="glb" type="galaxy.datatypes.binary:Binary" 
+              mimetype="model/gltf-binary" 
+              display_in_upload="false" 
+              description="glTF Binary (3D Tiles v1.1)"/>
+    
     <datatype extension="b3dm" type="galaxy.datatypes.binary:Binary" 
               mimetype="application/octet-stream" 
               display_in_upload="false" 
-              description="Batched 3D Model (3D Tiles)"/>
+              description="Batched 3D Model (3D Tiles v1.0)"/>
     
     <datatype extension="pnts" type="galaxy.datatypes.binary:Binary" 
               mimetype="application/octet-stream" 
               display_in_upload="false" 
-              description="Point Cloud (3D Tiles)"/>
+              description="Point Cloud (3D Tiles v1.0)"/>
     
     <datatype extension="i3dm" type="galaxy.datatypes.binary:Binary" 
               mimetype="application/octet-stream" 
               display_in_upload="false" 
-              description="Instanced 3D Model (3D Tiles)"/>
+              description="Instanced 3D Model (3D Tiles v1.0)"/>
     
     <datatype extension="cmpt" type="galaxy.datatypes.binary:Binary" 
               mimetype="application/octet-stream" 

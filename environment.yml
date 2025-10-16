@@ -1,5 +1,0 @@
-name: las-to-3dtiles
-channels:
-  - conda-forge
-dependencies:
-  - python=3.11

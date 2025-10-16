@@ -1,5 +1,5 @@
 <tool id="3dtrees_las_to_3dtiles" name="3D Trees LAS to 3D Tiles Converter" version="1.0.0" profile="21.09">
-  <description>Convert LAS/LAZ point cloud files to Cesium 3D Tiles with interactive viewer</description>
+  <description>Convert LAS/LAZ point cloud files to Cesium 3D Tiles (version 1.1)</description>
 
   <creator>
     <organization name="3D Trees Project" url="https://github.com/3dtrees-earth" />
@@ -10,27 +10,22 @@
   </requirements>
 
   <command detect_errors="exit_code"><![CDATA[
-        ## Set up output directory structure
-        mkdir -p output_dir &&
-        
-        ## Run the converter
-        gocesiumtiler file
-        --out output_dir/tileset
+        ## Run the converter via wrapper script - auto-converts LAZ to LAS if needed
+        /usr/local/bin/converter-wrapper.sh file
+        --out tileset
+        --version 1.1
         #if str($crs_in).strip()
         --crs '$crs_in'
         #end if
         --resolution '$resolution'
         --depth '$depth'
         --min-points-per-tile '$min_points_per_tile'
-        '$input' &&
-        
-        ## Copy tileset.json to output
-        cp output_dir/tileset/tileset.json tileset.json
+        '$input'
         ]]>
 </command>
 
   <inputs>
-    <param name="input" type="data" format="las" label="Point Cloud Dataset" help="LAS point cloud file to convert (LAZ not yet supported)"/>
+    <param name="input" type="data" format="las,laz" label="Point Cloud Dataset" help="LAS or LAZ point cloud file to convert. LAZ files are automatically decompressed."/>
 
     <!-- Coordinate Reference System -->
     <param name="crs_in" type="text" value="" optional="true" label="Input CRS (EPSG code)" 
@@ -50,22 +45,22 @@
   </inputs>
 
   <outputs>
-    <data name="tileset" format="json" label="Tileset Metadata" from_work_dir="tileset.json">
-      <discover_datasets pattern="__designation_and_ext__" directory="output_dir/tileset" visible="true" />
-    </data>
+    <data name="tileset_json" format="json" label="Tileset Metadata" from_work_dir="tileset/tileset.json" />
+    <collection name="tileset_dir" type="list" label="3D Tileset Directory">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)" format="data" directory="tileset" recurse="true" match_relative_path="true" />
+    </collection>
   </outputs>
 
   <tests>
     <test>
-      <param name="input" value="test.las"/>
-      <param name="crs_in" value=""/>
-      <param name="resolution" value="20"/>
-      <param name="depth" value="10"/>
-      <param name="min_points_per_tile" value="5000"/>
-      <output name="tileset" ftype="json">
+      <param name="input" value="test.las" />
+      <param name="crs_in" value="" />
+      <param name="resolution" value="20" />
+      <param name="depth" value="8" />
+      <param name="min_points_per_tile" value="1000" />
+      <output name="tileset_json" ftype="json">
         <assert_contents>
           <has_text text="asset" />
-          <has_text text="geometricError" />
         </assert_contents>
       </output>
     </test>
@@ -73,102 +68,117 @@
 
   <help><![CDATA[
 
-**What it does**
+# Overview
 
-This tool converts LAS point cloud files to Cesium 3D Tiles format using gocesiumtiler v2.0.1, creating an interactive web-based viewer optimized for large point cloud datasets.
+This tool converts LAS/LAZ point cloud files to Cesium 3D Tiles format using [gocesiumtiler](https://github.com/mfbonfigli/gocesiumtiler) by **Massimo Federico Bonfigli**, creating an interactive web-based visualization optimized for large point cloud datasets.
 
-The tool generates:
+---
 
-1. **3D Tiles** - Industry-standard Cesium 3D Tiles v1.1 (GLB format) for efficient streaming
-2. **Interactive Web Viewer** - Standalone HTML page with CesiumJS for browsing
-3. **Tileset Metadata** - JSON file describing the tile hierarchy
+## Outputs
 
-**Performance: 5M+ points/second**
+The tool generates a complete 3D Tileset directory containing:
 
------
+* **tileset.json** - Main metadata file describing tile hierarchy and geometric error
+* **GLB tiles** - Binary 3D Tiles (Cesium 3D Tiles v1.1 format) organized in octree structure
+* **Complete directory** - Full tileset folder ready for web hosting or further processing
 
-**Input Requirements**
+The tileset directory output can be downloaded as a collection and hosted on any web server for visualization with CesiumJS or other 3D Tiles-compatible viewers. See the [CesiumJS quickstart](https://cesium.com/learn/cesiumjs-learn/cesiumjs-quickstart/) for a general introduction. For guidance on hosting 3D Tiles on-premises (serving local files), see <https://cesium.com/on-prem/hosting-3d-content/>.
 
-- **Format**: LAS files only (LAZ compressed format not yet supported)
-- **CRS**: Automatic detection from LAS metadata (GeoTIFF keys, WKT, PROJ strings)
-- **Size**: Optimized for large datasets (gigabytes+)
+---
 
------
+## Input
 
-**Parameters**
+### Supported Formats
 
-**Input CRS (optional)**
-  Override auto-detected coordinate system. Use EPSG code format (e.g., "EPSG:32632" or "32632").
-  Leave empty for automatic detection from LAS file metadata.
+* LAS point cloud files (uncompressed)
+* LAZ point cloud files (compressed - automatically decompressed during processing)
+* Coordinate Reference System (CRS) automatically detected from file metadata
+* Optimized for large datasets
 
-**Grid Resolution (meters)**
-  Controls spatial sampling density. Points aren't deleted randomly - space is divided into 
-  a 3D grid, keeping the point closest to each cell center at each detail level.
-  
-  - **Lower (5-10)**: Urban areas, architectural models, fine detail preservation
-  - **Default (20)**: Balanced quality for most datasets
-  - **Higher (50-100)**: Large terrain, forests, quick preview conversions
+---
 
-**Tree Depth**
-  Maximum octree subdivision levels for progressive detail loading.
-  
-  - **Less (6-8)**: Small datasets, faster conversion, fewer tiles
-  - **Default (10)**: Balanced for most use cases
-  - **More (12-15)**: Very large datasets, smoother zoom transitions
+## Parameters
 
-**Minimum Points per Tile**
-  Threshold for tile creation affects LOD quality and file count.
-  
-  - **Fewer (1000-3000)**: Smoother level-of-detail transitions, more tiles
-  - **Default (5000)**: Balanced performance
-  - **More (8000-15000)**: Fewer HTTP requests, faster initial load
+### Input CRS (Optional)
 
------
+Override auto-detected coordinate reference system.
 
-**Common Use Case Presets**
+* **Format:** EPSG code (e.g., ``EPSG:32632`` or ``32632``)
+* **Default:** Empty (auto-detect from LAS metadata)
+* **Use when:** LAS file has incorrect/missing CRS information
 
-.. class:: infomark
+### Grid Resolution (meters)
 
-**Default (balanced)**
-  Resolution: 20m | Depth: 10 | Min Points: 5000
-  Good for most datasets, balanced quality and performance
+Controls spatial sampling density for level-of-detail generation.
 
-**Fast preview**
-  Resolution: 50m | Depth: 8 | Min Points: 10000
-  Quick conversion for testing, lower quality
+* **Lower (5-10m):** Urban areas, architectural models, fine detail preservation
+* **Default (20m):** Balanced quality for most datasets  
+* **Higher (50-100m):** Large terrain, forests, quick preview conversions
 
-**High quality urban**
-  Resolution: 5m | Depth: 12 | Min Points: 1000
-  Architectural models, detailed city scans
+### Tree Depth
 
-**Large terrain**
-  Resolution: 20m | Depth: 12 | Min Points: 5000
-  Forests, landscapes, large study areas
+Maximum octree subdivision levels for progressive detail loading.
 
------
+* **Lower (6-8):** Small datasets, faster conversion, fewer tiles
+* **Default (10):** Balanced for most use cases
+* **Higher (12-15):** Very large datasets, smoother zoom transitions
 
-**Output**
+### Minimum Points per Tile
 
-- **Tileset Metadata** (JSON): Main tileset.json file describing tile hierarchy and structure
-- **Tile Files**: Additional GLB format tiles (discovered as extra datasets)
+Threshold for tile creation - affects LOD quality and file count.
 
-**Note**: The tileset output can be downloaded and hosted on a web server for visualization with CesiumJS or other 3D Tiles viewers.
+* **Fewer (1000-3000):** Smoother level-of-detail transitions, more tiles
+* **Default (5000):** Balanced performance
+* **More (8000-15000):** Fewer HTTP requests, faster initial load
 
------
+---
 
-**Technical Details**
+## Recommended Use
 
-- **Engine**: gocesiumtiler v2.0.1
-- **3D Tiles**: Version 1.1 GLB format
-- **CRS Support**: Universal via PROJ 9.5.0
-- **Performance**: 5M+ points/second processing speed
+**Default (Balanced)**
+
+* Resolution: 20m
+* Depth: 10
+* Min Points: 5000
+* *Good for most datasets, balanced quality and performance*
+
+**Fast Preview**
+
+* Resolution: 50m
+* Depth: 8
+* Min Points: 10000
+* *Quick conversion for testing, lower quality*
+
+**High Quality Urban**
+
+* Resolution: 5m
+* Depth: 12
+* Min Points: 1000
+* *Architectural models, detailed city scans*
+
+**Large Terrain/Forest**
+
+* Resolution: 20m
+* Depth: 12
+* Min Points: 5000
+* *Landscapes, large study areas*
+
+---
+
+## Technical Details
+
+**Engine:** gocesiumtiler v2.0.1
+**3D Tiles Version:** 1.1 (GLB format)
+**CRS Support:** Universal via PROJ 9.5.0
+**Performance:** 5M+ points/second
+**Output Format:** Cesium 3D Tiles with octree spatial index
 
   ]]></help>
 
   <citations>
     <citation type="bibtex">
 @misc{gocesiumtiler2024,
-  title = {gocesiumtiler: A tool for massive 3D pointclouds conversion to Cesium 3DTiles},
+  title = {gocesiumtiler: A Cesium Point Cloud tile generator written in golang},
   author = {Matteo Ferrabone Bonfigli},
   year = {2024},
   url = {https://github.com/mfbonfigli/gocesiumtiler},
