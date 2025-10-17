@@ -10,8 +10,16 @@
   </requirements>
 
   <command detect_errors="exit_code"><![CDATA[
-        ## Run the converter via wrapper script - auto-converts LAZ to LAS if needed
-        /usr/local/bin/converter-wrapper.sh file
+        ## Handle LAZ to LAS conversion if needed
+        input_file='$input';
+        if [[ "\$input_file" == *.laz ]]; then
+            echo "Converting LAZ to LAS...";
+            laszip -i "\$input_file" -o input_converted.las;
+            input_file='input_converted.las';
+        fi;
+        
+        ## Run gocesiumtiler
+        gocesiumtiler file
         --out tileset
         --version 1.1
         #if str($crs_in).strip()
@@ -20,7 +28,7 @@
         --resolution '$resolution'
         --depth '$depth'
         --min-points-per-tile '$min_points_per_tile'
-        '$input'
+        "\$input_file"
         ]]>
 </command>
 
