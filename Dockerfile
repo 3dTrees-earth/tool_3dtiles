@@ -82,6 +82,6 @@ RUN mkdir -p /input /output && \
 USER converter
 WORKDIR /
 
-# Default command - use wrapper instead of direct gocesiumtiler
-ENTRYPOINT ["/usr/local/bin/converter-wrapper.sh"]
-CMD ["--help"]
+# Default command - use wrapper instead of direct gocesiumtiler  
+# Note: Don't use ENTRYPOINT here because Galaxy needs to override the command
+CMD ["/usr/local/bin/converter-wrapper.sh", "--help"]

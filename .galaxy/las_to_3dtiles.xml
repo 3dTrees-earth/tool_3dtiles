@@ -54,7 +54,7 @@
   <tests>
     <test>
       <param name="input" value="test.las" />
-      <param name="crs_in" value="" />
+      <param name="crs_in" value="EPSG:32632" />
       <param name="resolution" value="20" />
       <param name="depth" value="8" />
       <param name="min_points_per_tile" value="1000" />
