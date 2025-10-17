@@ -3,7 +3,7 @@
 # Custom datatypes configuration
 # This tells Planemo to load custom LAS/LAZ datatypes during testing
 extra_files:
-  - .galaxy/datatypes_conf.xml
+  - datatypes_conf.xml
 
 # Test configuration
 test:

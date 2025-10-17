@@ -15,7 +15,7 @@ long_description: |
   Based on gocesiumtiler by Matteo Ferrabone Bonfigli.
 
 homepage_url: https://github.com/mfbonfigli/gocesiumtiler
-remote_repository_url: https://github.com/3dtrees-earth/las-to-3dtiles/tree/main/.galaxy
+remote_repository_url: https://github.com/3dtrees-earth/tool_3dtiles/tree/main/.galaxy
 type: unrestricted
 categories:
   - Geospatial

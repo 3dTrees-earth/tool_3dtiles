@@ -1,104 +1,187 @@
-# Overview
+# LAS to 3D Tiles Converter
 
-This tool converts LAS/LAZ point cloud files to Cesium 3D Tiles format using [gocesiumtiler](https://github.com/mfbonfigli/gocesiumtiler) by **Massimo Federico Bonfigli**, creating an interactive web-based visualization optimized for large point cloud datasets.
+Docker container for converting LAS/LAZ point cloud files to Cesium 3D Tiles format using [gocesiumtiler](https://github.com/mfbonfigli/gocesiumtiler).
 
----
+## Quick Start
 
-## Outputs
+### Using Docker
 
-The tool generates a complete 3D Tileset directory containing:
+```bash
+# Pull the latest container
+docker pull ghcr.io/3dtrees-earth/tool_3dtiles:latest
 
-* **tileset.json** - Main metadata file describing tile hierarchy and geometric error
-* **GLB tiles** - Binary 3D Tiles (Cesium 3D Tiles v1.1 format) organized in octree structure
-* **Complete directory** - Full tileset folder ready for web hosting or further processing
+# Convert a single LAS file
+docker run --rm \
+  -v /path/to/data:/input \
+  -v /path/to/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  gocesiumtiler file --out /output/tileset /input/yourfile.las
 
-The tileset directory output can be downloaded as a collection and hosted on any web server for visualization with CesiumJS or other 3D Tiles-compatible viewers. See the [CesiumJS quickstart](https://cesium.com/learn/cesiumjs-learn/cesiumjs-quickstart/) for a general introduction. For guidance on hosting 3D Tiles on-premises (serving local files), see <https://cesium.com/on-prem/hosting-3d-content/>.
+# Convert LAZ (automatically decompressed)
+docker run --rm \
+  -v /path/to/data:/input \
+  -v /path/to/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  gocesiumtiler file --out /output/tileset /input/yourfile.laz
+```
 
----
+### Using the Wrapper Script
 
-## Input
+The container includes a wrapper script that automatically generates output directories and handles LAZ conversion:
 
-### Supported Formats
+```bash
+# Auto-named output directory (based on input filename)
+docker run --rm \
+  -v /path/to/data:/input \
+  -v /path/to/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  /usr/local/bin/converter-wrapper.sh file /input/yourfile.las
 
-* LAS point cloud files (uncompressed)
-* LAZ point cloud files (compressed - automatically decompressed during processing)
-* Coordinate Reference System (CRS) automatically detected from file metadata
-* Optimized for large datasets
-
----
+# Batch process multiple files
+docker run --rm \
+  -v /path/to/data:/input \
+  -v /path/to/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  /usr/local/bin/converter-wrapper.sh batch /input
+```
 
 ## Parameters
 
-### Input CRS (Optional)
+### Essential Options
 
-Override auto-detected coordinate reference system.
+```bash
+--out <dir>              # Output directory for tileset
+--crs <EPSG>            # Input CRS (e.g., EPSG:32632)
+--version <ver>         # 3D Tiles version (1.0 or 1.1)
+```
 
-* **Format:** EPSG code (e.g., ``EPSG:32632`` or ``32632``)
-* **Default:** Empty (auto-detect from LAS metadata)
-* **Use when:** LAS file has incorrect/missing CRS information
+### Quality & Performance
 
-### Grid Resolution (meters)
+```bash
+--resolution <meters>           # Grid cell size (default: 20)
+                               # Lower (5-10): urban/detailed
+                               # Higher (50-100): terrain/preview
 
-Controls spatial sampling density for level-of-detail generation.
+--depth <levels>               # Max tree depth (default: 10)
+                              # More (12-15): smoother zoom
+                              # Less (6-8): faster conversion
 
-* **Lower (5-10m):** Urban areas, architectural models, fine detail preservation
-* **Default (20m):** Balanced quality for most datasets  
-* **Higher (50-100m):** Large terrain, forests, quick preview conversions
+--min-points-per-tile <n>     # Min points per tile (default: 5000)
+                              # Fewer (1000-3000): more tiles, smoother LOD
+                              # More (8000-15000): fewer files, faster load
+```
 
-### Tree Depth
+## Examples
 
-Maximum octree subdivision levels for progressive detail loading.
+### High Quality Urban Scan
 
-* **Lower (6-8):** Small datasets, faster conversion, fewer tiles
-* **Default (10):** Balanced for most use cases
-* **Higher (12-15):** Very large datasets, smoother zoom transitions
+```bash
+docker run --rm \
+  -v $(pwd)/data:/input \
+  -v $(pwd)/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  gocesiumtiler file \
+  --out /output/urban_tileset \
+  --crs EPSG:32632 \
+  --version 1.1 \
+  --resolution 5 \
+  --depth 12 \
+  --min-points-per-tile 1000 \
+  /input/urban_scan.las
+```
 
-### Minimum Points per Tile
+### Fast Preview (Large Terrain)
 
-Threshold for tile creation - affects LOD quality and file count.
+```bash
+docker run --rm \
+  -v $(pwd)/data:/input \
+  -v $(pwd)/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  gocesiumtiler file \
+  --out /output/terrain_preview \
+  --version 1.1 \
+  --resolution 50 \
+  --depth 8 \
+  --min-points-per-tile 10000 \
+  /input/terrain.laz
+```
 
-* **Fewer (1000-3000):** Smoother level-of-detail transitions, more tiles
-* **Default (5000):** Balanced performance
-* **More (8000-15000):** Fewer HTTP requests, faster initial load
+### Batch Processing
 
----
+```bash
+# Process all LAS/LAZ files in a directory
+docker run --rm \
+  -v $(pwd)/input:/input \
+  -v $(pwd)/output:/output \
+  ghcr.io/3dtrees-earth/tool_3dtiles:latest \
+  /usr/local/bin/converter-wrapper.sh batch \
+  --resolution 20 \
+  --depth 10 \
+  /input
+```
 
-## Recommended Use
+## Building the Container
 
-**Default (Balanced)**
+```bash
+# Clone the repository
+git clone https://github.com/3dtrees-earth/tool_3dtiles.git
+cd tool_3dtiles
 
-* Resolution: 20m
-* Depth: 10
-* Min Points: 5000
-* *Good for most datasets, balanced quality and performance*
+# Build locally
+docker build -t tool_3dtiles:local .
 
-**Fast Preview**
+# Use local build
+docker run --rm \
+  -v $(pwd)/data:/input \
+  -v $(pwd)/output:/output \
+  tool_3dtiles:local \
+  gocesiumtiler file --out /output/tileset /input/test.las
+```
 
-* Resolution: 50m
-* Depth: 8
-* Min Points: 10000
-* *Quick conversion for testing, lower quality*
+## Galaxy Tool
 
-**High Quality Urban**
+This repository also contains a Galaxy tool wrapper for use in Galaxy workflows. See `.galaxy/README.md` for Galaxy-specific documentation.
 
-* Resolution: 5m
-* Depth: 12
-* Min Points: 1000
-* *Architectural models, detailed city scans*
+* **ToolShed:** `las_to_3dtiles` by `3dtrees`
+* **Category:** Geospatial
 
-**Large Terrain/Forest**
+## Output Format
 
-* Resolution: 20m
-* Depth: 12
-* Min Points: 5000
-* *Landscapes, large study areas*
+The tool generates a complete 3D Tileset directory:
 
----
+* `tileset.json` - Main metadata file
+* `*.glb` - Binary 3D Tiles in octree structure
+* Ready for web hosting with CesiumJS
+
+### Viewing Your Tiles
+
+See the [CesiumJS quickstart](https://cesium.com/learn/cesiumjs-learn/cesiumjs-quickstart/) or [hosting 3D content guide](https://cesium.com/on-prem/hosting-3d-content/) for visualization options.
 
 ## Technical Details
 
-**Engine:** gocesiumtiler v2.0.1
-**3D Tiles Version:** 1.1 (GLB format)
-**CRS Support:** Universal via PROJ 9.5.0
-**Performance:** 5M+ points/second
-**Output Format:** Cesium 3D Tiles with octree spatial index
+* **Engine:** gocesiumtiler v2.0.1
+* **3D Tiles Version:** 1.1 (GLB format)
+* **CRS Support:** Universal via PROJ 9.5.0
+* **Performance:** 5M+ points/second
+* **LAZ Support:** Automatic decompression via LAStools
+
+## License
+
+This Docker container and Galaxy tool wrapper are developed by the 3D Trees Project. The underlying gocesiumtiler software is by Massimo Federico Bonfigli.
+
+## Citation
+
+```bibtex
+@misc{gocesiumtiler2024,
+  title = {gocesiumtiler: A Cesium Point Cloud tile generator written in golang},
+  author = {Matteo Ferrabone Bonfigli},
+  year = {2024},
+  url = {https://github.com/mfbonfigli/gocesiumtiler},
+  note = {Version 2.0.1}
+}
+```
+
+## Support
+
+* **Issues:** <https://github.com/3dtrees-earth/tool_3dtiles/issues>
+* **Galaxy Documentation:** See `.galaxy/README.md`
